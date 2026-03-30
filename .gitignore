@@ -1,0 +1,8 @@
+# Ignorowanie śmieci LaTeX w folderze PDF
+PDF/*.aux
+PDF/*.log
+PDF/*.toc
+PDF/*.synctex.gz
+PDF/*.fdb_latexmk
+PDF/*.fls
+PDF/*.out
