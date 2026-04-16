@@ -126,12 +126,12 @@ TimelineResult buildTimeline(const std::vector<double>& service_times,
 
         if (num_calls <= 0) continue;
 
-        const double minute_start_ms = day_profile[i].minute * 60.0;
-        const double interval_ms     = 60.0 / num_calls;
+        const double minute_start_s = day_profile[i].minute * 60.0;
+        const double interval_s     = 60.0 / num_calls;
 
         for (int c = 0; c < num_calls; ++c) {
             Call call;
-            call.start_time = minute_start_ms + (c * interval_ms);
+            call.start_time = minute_start_s + (c * interval_s);
             call.duration   = service_times[current_idx++];
             call.end_time   = call.start_time + call.duration;
 
