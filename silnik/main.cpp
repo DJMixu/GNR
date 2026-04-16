@@ -3,10 +3,8 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <random>
 #include <iomanip>
 #include <cmath>
-#include <chrono>
 
 // Struktura opisująca pojedyncze wywołanie na osi czasu
 struct Call {
@@ -15,9 +13,15 @@ struct Call {
     double end_time;
 };
 
+// Struktura na dane z profilu dobowego (z pliku INT.TXT)
+struct MinuteStat {
+    int minute;
+    double lambda;
+};
+
 // Funkcja zamieniająca milisekundy na czytelny zegar (HH:MM:SS)
 std::string formatTime(double ms) {
-    long long total_seconds = ms / 1000;
+    long long total_seconds = ms ;
     int hours = total_seconds / 3600;
     int minutes = (total_seconds % 3600) / 60;
     int seconds = total_seconds % 60;
@@ -30,7 +34,7 @@ std::string formatTime(double ms) {
 int main() {
     // KROK 1: Wczytanie plików wejściowych
     std::ifstream fTime("CZAS.TXT");         // Plik 1: 34953 czasów obsługi
-    std::ifstream fHist("INT.TXT"); // Plik 2: 1020 wierszy histogramu odstępów
+    std::ifstream fHist("INT.TXT");          // Plik 2: Profil dobowy (Minuta | Lambda)
 
     if (!fTime.is_open() || !fHist.is_open()) {
         std::cerr << "Blad: Nie mozna otworzyc plikow txt." << std::endl;
@@ -44,75 +48,79 @@ int main() {
         service_times.push_back(std::stod(line));
     }
 
-    std::vector<double> inter_arrival_values;
-    std::vector<double> probabilities;
-    std::string valStr, probStr;
+    std::vector<MinuteStat> day_profile;
+    std::string mStr, lStr;
 
-    while (fHist >> valStr >> probStr) {
-        std::replace(valStr.begin(), valStr.end(), ',', '.');
-        std::replace(probStr.begin(), probStr.end(), ',', '.');
-        inter_arrival_values.push_back(std::stod(valStr));
-        probabilities.push_back(std::stod(probStr));
+    // Wczytywanie Minuty i Lambdy z INT.TXT
+    while (fHist >> mStr >> lStr) {
+        std::replace(lStr.begin(), lStr.end(), ',', '.');
+        day_profile.push_back({std::stoi(mStr), std::stod(lStr)});
     }
 
-    // KROK 2: Przygotowanie i tasowanie TYLKO odstępów (przerw)
-    std::cout << "Trwa odbudowa osi czasu..." << std::endl;
+    // KROK 2: Precyzyjna odbudowa osi czasu (Profil dobowy)
+    std::cout << "Trwa odbudowa osi czasu na podstawie profilu dobowego..." << std::endl;
 
-    double sum_probs = 0.0;
-    for(double p : probabilities) {
-        sum_probs += p;
+    double total_lambda = 0.0;
+    for (const auto& ms : day_profile) {
+        total_lambda += ms.lambda;
     }
 
-    std::vector<double> exact_intervals;
-    exact_intervals.reserve(service_times.size());
+    // Współczynnik pozwalający rozdzielić wszystkie zapytania zgodnie z siłą lambdy
+    double scale = service_times.size() / total_lambda;
 
-    // Obliczamy dokładną liczbę wystąpień dla każdej przerwy
-    for(size_t i = 0; i < inter_arrival_values.size(); ++i) {
-            int count = std::max(1, static_cast<int>(std::round((probabilities[i] / sum_probs) * service_times.size())));
-        for(int c = 0; c < count; ++c) {
-            exact_intervals.push_back(inter_arrival_values[i]);
+    std::vector<Call> timeline;
+    int current_service_idx = 0;
+    double max_sim_time = 0.0; // Przechowuje czas zakończenia ostatniego zapytania
+
+    for (size_t i = 0; i < day_profile.size(); ++i) {
+        // Liczymy, ile zapytań przypada na tę konkretną minutę
+        int num_calls = static_cast<int>(std::round(day_profile[i].lambda * scale));
+
+        // Zabezpieczenie na wypadek zaokrągleń (żeby nie przekroczyć rozmiaru i przypisać wszystko)
+        if (current_service_idx + num_calls > service_times.size()) {
+            num_calls = service_times.size() - current_service_idx;
+        }
+        if (i == day_profile.size() - 1 && current_service_idx < service_times.size()) {
+            // Ostatnia minuta w pliku "zgarnia" pozostałe żądania, by nic nie zginęło
+            num_calls = service_times.size() - current_service_idx;
+        }
+
+        if (num_calls <= 0) continue;
+
+        // Start tej konkretnej minuty w milisekundach
+        double minute_start_ms = day_profile[i].minute * 60.0;
+
+        // Równomierne rozłożenie startów zapytań wewnątrz danej minuty (dla okna przesuwnego)
+        double interval_ms = 60.0 / num_calls;
+
+        for (int c = 0; c < num_calls; ++c) {
+            Call call;
+            call.start_time = minute_start_ms + (c * interval_ms);
+            call.duration = service_times[current_service_idx];
+            call.end_time = call.start_time + call.duration;
+
+            timeline.push_back(call);
+            current_service_idx++;
+
+            if (call.end_time > max_sim_time) {
+                max_sim_time = call.end_time;
+            }
         }
     }
 
-    // Wyrównanie zaokrągleń
-    while(exact_intervals.size() > service_times.size()) exact_intervals.pop_back();
-    while(exact_intervals.size() < service_times.size()) exact_intervals.push_back(inter_arrival_values[0]);
-
-    // Tasujemy TYLKO odstępy (używamy czasu systemowego dla prawdziwej losowości)
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::mt19937 gen(seed);
-    std::shuffle(exact_intervals.begin(), exact_intervals.end(), gen);
-
-    // UWAGA: Nie tasujemy 'service_times', bo plik ma naturalną, chronologiczną kolejność!
-
-    // KROK 3: Mapowanie czasów i budowa ostatecznej linii zdarzeń
-    std::vector<Call> timeline;
-    double current_time = 0.0;
-
-    for (size_t i = 0; i < service_times.size(); ++i) {
-        current_time += exact_intervals[i]; // Używamy potasowanego odstępu
-
-        Call c;
-        c.start_time = current_time;
-        c.duration = service_times[i]; // Używamy oryginalnej kolejności pobierania
-        c.end_time = current_time + service_times[i];
-
-        timeline.push_back(c);
-    }
-
     std::cout << "Odbudowano " << timeline.size() << " zapytan." << std::endl;
-    std::cout << "GWARANTOWANY zasymulowany czas trwania pomiaru: " << formatTime(current_time) << "\n" << std::endl;
+    std::cout << "Koniec ostatniego polaczenia na osi czasu: " << formatTime(max_sim_time) << "\n" << std::endl;
 
     // KROK 4: Algorytm Okna Przesuwnego (Szukanie GNR)
     std::cout << "Szukam Godziny Najwiekszego Ruchu (GNR)..." << std::endl;
 
-    double window_size = 3600000.0;  // 1 godzina = 3 600 000 ms
-    double step_size = 60000.0 * 15;      // Przesunięcie o 1 minutę = 60 000 ms
+    double window_size = 3600.0;       // 1 godzina = 3 600 000 ms
+    double step_size = 60.0 * 15;      // Przesunięcie o 15 minut (wg Twojego kodu)
 
     double max_erlangs = 0.0;
     double best_gnr_start = 0.0;
 
-    for (double w_start = 0; w_start <= current_time - window_size; w_start += step_size) {
+    for (double w_start = 0; w_start <= max_sim_time - window_size; w_start += step_size) {
         double w_end = w_start + window_size;
         double active_time_in_window = 0.0;
 
@@ -143,10 +151,11 @@ int main() {
     std::cout << std::fixed << std::setprecision(4);
     std::cout << "Obciazenie w Godzinie Szczytu (GNR): " << max_erlangs << " Erlangow" << std::endl;
     std::cout << "==================" << std::endl;
+
     // KROK 6: Zrzut linii GNR do osobnego pliku
     std::ofstream fOut("gnr_linie.txt");
     if (fOut.is_open()) {
-        fOut << "Wywołania z pliku czas.txt należące do GNR\n";
+        fOut << "Wywolania z pliku czas.txt nalezace do GNR\n";
         fOut << "Okno: " << formatTime(best_gnr_start) << " - " << formatTime(best_gnr_start + window_size) << "\n";
         fOut << "Ruch: " << max_erlangs << " Erlangow\n";
         fOut << "--------------------------------------------------\n";
@@ -157,16 +166,17 @@ int main() {
         for (const auto& call : timeline) {
             // Sprawdzamy, czy połączenie "zahaczyło" o nasze okno GNR
             if (call.end_time > best_gnr_start && call.start_time < best_gnr_start + window_size) {
-                fOut << "Linia w pliku: " << line_number << " \t| Czas obsługi: " << call.duration << " ms\n";
+                fOut << "Linia w pliku: " << line_number << " \t| Czas obslugi: " << call.duration << " ms\n";
                 count_in_gnr++;
             }
             line_number++;
         }
         fOut.close();
-        std::cout << "\nZnaleziono " << count_in_gnr << " zapytań tworzących GNR." << std::endl;
+        std::cout << "\nZnaleziono " << count_in_gnr << " zapytan tworzacych GNR." << std::endl;
         std::cout << "Zapisano dokladne numery linii do pliku: gnr_linie.txt" << std::endl;
     } else {
         std::cerr << "Nie udalo sie utworzyc pliku gnr_linie.txt" << std::endl;
     }
+
     return 0;
 }
