@@ -16,3 +16,4 @@ add_executable(silnik main.cpp
         algorytmGNR1.cpp
         algorytmGNR1.h
 )
+target_link_options(silnik PRIVATE "-static")
