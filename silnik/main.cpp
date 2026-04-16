@@ -68,8 +68,7 @@ int main() {
 
     // Obliczamy dokładną liczbę wystąpień dla każdej przerwy
     for(size_t i = 0; i < inter_arrival_values.size(); ++i) {
-        int count = std::round((probabilities[i] / sum_probs) * service_times.size());
-        for(int c = 0; c < count; ++c) {
+            int count = std::max(1, static_cast<int>(std::round((probabilities[i] / sum_probs) * service_times.size())));        for(int c = 0; c < count; ++c) {
             exact_intervals.push_back(inter_arrival_values[i]);
         }
     }
