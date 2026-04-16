@@ -19,8 +19,8 @@ struct MinuteStat {
 
 // ─── Funkcje pomocnicze ───────────────────────────────────────────────────────
 
-std::string formatTime(double ms) {
-    long long total_seconds = ms;
+std::string formatTime(double s) {
+    long long total_seconds = s;
     int hours   = total_seconds / 3600;
     int minutes = (total_seconds % 3600) / 60;
     int seconds = total_seconds % 60;
@@ -114,15 +114,14 @@ TimelineResult buildTimeline(const std::vector<double>& service_times,
     const double scale = service_times.size() / total_lambda;
 
     TimelineResult result;
-    int current_idx = 0;
-
+    size_t current_idx = 0;
     for (size_t i = 0; i < day_profile.size(); ++i) {
         int num_calls = static_cast<int>(std::round(day_profile[i].lambda * scale));
 
-        if (current_idx + num_calls > static_cast<int>(service_times.size()))
+        if (current_idx + num_calls > service_times.size())
             num_calls = service_times.size() - current_idx;
 
-        if (i == day_profile.size() - 1 && current_idx < static_cast<int>(service_times.size()))
+        if (i == day_profile.size() - 1 && current_idx < service_times.size())
             num_calls = service_times.size() - current_idx;
 
         if (num_calls <= 0) continue;
@@ -150,13 +149,14 @@ TimelineResult buildTimeline(const std::vector<double>& service_times,
 struct GnrResult {
     double max_erlangs  = 0.0;
     double window_start = 0.0;
+    const double window_size  = 3600.0;
 };
 
 GnrResult findPeakHour(const std::vector<Call>& timeline, double max_sim_time) {
-    const double window_size = 3600.0;
+    GnrResult best;
+    const double window_size = best.window_size;
     const double step_size   = 60.0 * 15;
 
-    GnrResult best;
 
     for (double w_start = 0; w_start <= max_sim_time - window_size; w_start += step_size) {
         const double w_end = w_start + window_size;
@@ -189,7 +189,7 @@ void exportGnrLines(const std::vector<Call>& timeline,
     if (!file.is_open())
         throw std::runtime_error("Nie udalo sie utworzyc pliku: " + filename);
 
-    const double w_end = gnr.window_start + 3600.0;
+    const double w_end = gnr.window_start + gnr.window_size;
 
     file << std::fixed << std::setprecision(0);
     file << "Wywolania z pliku czas.txt nalezace do GNR\n";
@@ -229,7 +229,7 @@ int main() {
 
         std::cout << "=== WYNIKI GNR ===" << std::endl;
         std::cout << "Od: " << formatTime(gnr.window_start)
-                  << " do: " << formatTime(gnr.window_start + 3600.0) << std::endl;
+                  << " do: " << formatTime(gnr.window_start + gnr.window_size) << std::endl;
         std::cout << std::fixed << std::setprecision(0);
         std::cout << "Obciazenie w GNR: " << gnr.max_erlangs << " Erlangow" << std::endl;
         std::cout << "==================" << std::endl;
