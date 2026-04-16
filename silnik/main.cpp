@@ -8,9 +8,11 @@
 #include "dataWriter.h"
 #include "supportFunctions.h"
 #include "timeLineBuilder.h"
+#include "generateDay.h"
 
 
 int main() {
+    ensure_days_exist("INT.TXT", 7, true);
     try {
         const auto service_times = loadServiceTimes("CZAS.TXT");
         const auto day_profile   = loadDayProfile("INT.TXT");
