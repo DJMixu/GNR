@@ -191,7 +191,7 @@ void exportGnrLines(const std::vector<Call>& timeline,
 
     const double w_end = gnr.window_start + 3600.0;
 
-    file << std::fixed << std::setprecision(4);
+    file << std::fixed << std::setprecision(0);
     file << "Wywolania z pliku czas.txt nalezace do GNR\n";
     file << "Okno: " << formatTime(gnr.window_start) << " - " << formatTime(w_end) << "\n";
     file << "Ruch: " << gnr.max_erlangs << " Erlangow\n";
@@ -202,7 +202,7 @@ void exportGnrLines(const std::vector<Call>& timeline,
     for (const auto& call : timeline) {
         if (call.end_time > gnr.window_start && call.start_time < w_end) {
             file << "Linia w pliku: " << line_number
-                 << " \t| Czas obslugi: " << call.duration << " ms\n";
+                 << " \t| Czas obslugi: " << call.duration << " s\n";
             ++count_in_gnr;
         }
         ++line_number;
@@ -230,7 +230,7 @@ int main() {
         std::cout << "=== WYNIKI GNR ===" << std::endl;
         std::cout << "Od: " << formatTime(gnr.window_start)
                   << " do: " << formatTime(gnr.window_start + 3600.0) << std::endl;
-        std::cout << std::fixed << std::setprecision(4);
+        std::cout << std::fixed << std::setprecision(0);
         std::cout << "Obciazenie w GNR: " << gnr.max_erlangs << " Erlangow" << std::endl;
         std::cout << "==================" << std::endl;
 
