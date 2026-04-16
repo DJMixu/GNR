@@ -39,7 +39,7 @@ void generate_day(const std::string& source_path, const std::string& output_path
 
             double new_load = load * dist(gen);
 
-            // Zapis z powrotem z przecinkiem
+            // Zapis do pliku
             output_file << minute << "\t" << new_load << "\n";
         } catch (...) {
             continue;
