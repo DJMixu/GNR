@@ -15,5 +15,6 @@ add_executable(silnik main.cpp
         dataWriter.h
         algorytmGNR1.cpp
         algorytmGNR1.h
+        generateDay.cpp
 )
 target_link_options(silnik PRIVATE "-static")
