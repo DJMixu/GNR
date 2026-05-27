@@ -1,21 +1,30 @@
-#include <iostream>
-#include <fstream>
+// #include <iostream>
+// #include <fstream>
 #include <vector>
 #include <string>
 #include <iomanip>
+#include <iostream>
+
 #include "algorytmGNR1.h"
 #include "dataReader.h"
 #include "dataWriter.h"
 #include "supportFunctions.h"
 #include "timeLineBuilder.h"
 #include "generateDay.h"
+#include "srDzien.h"
 
 
 int main() {
-    ensure_days_exist("INT.TXT", 7, true);
+    int num_days = 7;
+
     try {
         const auto service_times = loadServiceTimes("CZAS.TXT");
-        const auto day_profile   = loadDayProfile("INT.TXT");
+        //const auto day_profile   = loadDayProfile("INT.TXT");
+
+        ensure_days_exist("INT.TXT", num_days, true);
+        wygenerujSredniDzien(num_days, "INT_SR.TXT");
+
+        const auto day_profile = loadDayProfile("INT_SR.TXT");
 
         std::cout << "Trwa odbudowa osi czasu na podstawie profilu dobowego..." << std::endl;
         const auto [timeline, max_sim_time] = buildTimeline(service_times, day_profile);
