@@ -62,8 +62,6 @@ int main(int argc, char* argv[]) {
                   << (force_overwrite ? "TAK" : "NIE") << ")..." << std::endl;
         ensure_days_exist("INT.TXT", number_of_days, force_overwrite);
 
-        double wynik_adpqh = 0.0;
-
         // KROK 3: OBLICZENIA METODĄ 3.1: TCBH
         if (uruchom_tcbh) {
             std::cout << "\n--- [METODA TCBH] ---" << std::endl;
@@ -73,8 +71,8 @@ int main(int argc, char* argv[]) {
             std::cout << "Odbudowa osi czasu dla profilu sredniego..." << std::endl;
             const auto [timeline_tcbh, max_sim_time_tcbh] = buildTimeline(service_times, day_profile_tcbh);
 
-            // Inicjalizacja bezpośrednia (naprawiony błąd "use of deleted function")
-            const GnrResult gnr_tcbh = findPeakHour(timeline_tcbh, max_sim_time_tcbh);
+            // Jeśli zastąpiłeś findPeakHour nową funkcją, zmień to wywołanie na:
+            const GnrResult gnr_tcbh = findPeakHour(timeline_tcbh, 3600.0, 900.0);
 
             runDiagnostics(service_times, timeline_tcbh);
             exportGnrLines(timeline_tcbh, gnr_tcbh, "gnr_linie.txt");
@@ -93,13 +91,15 @@ int main(int argc, char* argv[]) {
         // KROK 4: OBLICZENIA METODĄ 3.2: ADPQH
         if (uruchom_adpqh) {
             std::cout << "\n--- [METODA ADPQH] ---" << std::endl;
-            wynik_adpqh = obliczADPQH(number_of_days, service_times);
+
+            // Explicitly set window to 15 min (900s) and step to 15 min (900s)
+            GnrResult wynik_adpqh = obliczADPQH(number_of_days, service_times, 900.0, 900.0);
 
             std::cout << "\n=====================================" << std::endl;
             std::cout << "========= WYNIK METODY ADPQH ========" << std::endl;
             std::cout << "=====================================" << std::endl;
             std::cout << std::fixed << std::setprecision(2);
-            std::cout << "3.2 ADPQH (Ruchomy szczyt 15-min): " << wynik_adpqh << " Erlangow" << std::endl;
+            std::cout << "3.2 ADPQH (Ruchomy szczyt 15-min): " << wynik_adpqh.max_erlangs << " Erlangow" << std::endl;
             std::cout << "=====================================" << std::endl;
         } else {
             std::cout << "\n3.2 ADPQH (Ruchomy szczyt 15-min): POMINIETO" << std::endl;
