@@ -15,4 +15,5 @@ struct TimelineResult {
 
 TimelineResult buildTimeline(const std::vector<double>& service_times,
                               const std::vector<MinuteStat>& day_profile);
+
 #endif //SILNIK_TIMELINEBUILDER_H

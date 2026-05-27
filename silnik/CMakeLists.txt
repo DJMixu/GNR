@@ -18,5 +18,7 @@ add_executable(silnik main.cpp
         generateDay.cpp
         srDzien.cpp
         srDzien.h
+        algorytmGNR2.cpp
+        algorytmGNR2.h
 )
 target_link_options(silnik PRIVATE "-static")

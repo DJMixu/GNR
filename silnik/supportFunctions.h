@@ -12,4 +12,6 @@
 std::string formatTime(double s);
 void runDiagnostics(const std::vector<double>& service_times,
                     const std::vector<Call>& timeline);
+
+void wyswietlInstrukcje(const char* silnik);
 #endif //SILNIK_SUPPORTFUNCTIONS_H

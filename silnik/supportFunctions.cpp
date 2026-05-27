@@ -58,3 +58,13 @@ void runDiagnostics(const std::vector<double>& service_times,
               << std::endl;
     std::cout << "===========================================\n" << std::endl;
 }
+
+void wyswietlInstrukcje(const char* silnik) {
+    std::cout << "Uzycie: " << silnik << " [opcje]\n"
+              << "Opcje:\n"
+              << "  -n, --days <int>    Liczba dni do analizy (domyslnie: 7)\n"
+              << "  --force             Wymuszenie nadpisania istniejacych plikow dni\n"
+              << "  --tcbh              Uruchom tylko algorytm TCBH (Sredni dzien)\n"
+              << "  --adpqh             Uruchom tylko algorytm ADPQH (Ruchomy szczyt)\n"
+              << "  -h, --help          Wyswietl te pomoc\n";
+}
