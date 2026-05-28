@@ -9,7 +9,39 @@
 #include <vector>
 
 #include "models.h"
+#include <cmath>
+#include <algorithm>
 
+std::vector<double> generateChartErlangs(const std::vector<Call>& timeline, double step_size) {
+    if (step_size <= 0.0) return {};
+
+    const double SECONDS_IN_DAY = 86400.0;
+    const int NUM_BINS = static_cast<int>(std::ceil(SECONDS_IN_DAY / step_size));
+    std::vector<double> bins(NUM_BINS, 0.0);
+
+    for (const auto& call : timeline) {
+        int start_bin = std::max(0, static_cast<int>(call.start_time / step_size));
+        int end_bin   = std::min(NUM_BINS - 1, static_cast<int>(call.end_time / step_size));
+
+        for (int b = start_bin; b <= end_bin; ++b) {
+            double bin_start = b * step_size;
+            double bin_end   = bin_start + step_size;
+
+            double overlap_start = std::max(call.start_time, bin_start);
+            double overlap_end   = std::min(call.end_time, bin_end);
+
+            if (overlap_end > overlap_start) {
+                bins[b] += (overlap_end - overlap_start); // sumujemy sekundy ruchu
+            }
+        }
+    }
+
+    // Zamiana sekund ruchu na Erlangi
+    for (auto& val : bins) {
+        val /= step_size;
+    }
+    return bins;
+}
 std::string formatTime(double s) {
     long long total_seconds = s;
     int hours   = total_seconds / 3600;

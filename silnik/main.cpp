@@ -1,9 +1,8 @@
-// #include <iostream>
-// #include <fstream>
 #include <vector>
 #include <string>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 
 #include "algorytmGNR1.h"
 #include "algorytmGNR2.h"
@@ -14,95 +13,66 @@
 #include "generateDay.h"
 #include "srDzien.h"
 
-
 int main(int argc, char* argv[]) {
     int number_of_days = 7;
     bool force_overwrite = false;
     bool uruchom_tcbh = true;
-    bool uruchom_adpqh = true;
-    bool tylko_jeden_wybrany = false;
+    bool uruchom_adpqh = false;
+    double window_size = 3600.0;
+    double step_size = 900.0;
 
     // Parsowanie flag konsolowych
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-
         if (arg == "-h" || arg == "--help") {
-            wyswietlInstrukcje(argv[0]);
-            return 0;
+            wyswietlInstrukcje(argv[0]); return 0;
         } else if ((arg == "-n" || arg == "--days") && i + 1 < argc) {
             number_of_days = std::stoi(argv[++i]);
         } else if (arg == "--force") {
             force_overwrite = true;
+        } else if (arg == "--window" && i + 1 < argc) {
+            window_size = std::stod(argv[++i]);
+        } else if (arg == "--step" && i + 1 < argc) {
+            step_size = std::stod(argv[++i]);
         } else if (arg == "--tcbh") {
-            uruchom_tcbh = true;
-            if (!tylko_jeden_wybrany) { uruchom_adpqh = false; tylko_jeden_wybrany = true; }
+            uruchom_tcbh = true; uruchom_adpqh = false;
         } else if (arg == "--adpqh") {
-            uruchom_adpqh = true;
-            if (!tylko_jeden_wybrany) { uruchom_tcbh = false; tylko_jeden_wybrany = true; }
-        } else {
-            std::cerr << "Nieznany argument: " << arg << "\n";
-            wyswietlInstrukcje(argv[0]);
-            return 1;
+            uruchom_adpqh = true; uruchom_tcbh = false;
         }
     }
 
-    // Korekta w przypadku podania obu flag naraz
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "--tcbh") uruchom_tcbh = true;
-        if (arg == "--adpqh") uruchom_adpqh = true;
-    }
-
     try {
-        // KROK 1: Ładowanie podstawowych czasów obsługi
         const auto service_times = loadServiceTimes("CZAS.TXT");
 
-        // KROK 2: Walidacja obecności plików na dysku z użyciem naszej flagi
         std::cout << "Sprawdzam dostepnosc plikow dni (Wymuszenie nadpisania: "
                   << (force_overwrite ? "TAK" : "NIE") << ")..." << std::endl;
         ensure_days_exist("INT.TXT", number_of_days, force_overwrite);
 
-        // KROK 3: OBLICZENIA METODĄ 3.1: TCBH
+        // ZAWSZE generuj średni dzień dla Javy
+        wygenerujSredniDzien(number_of_days, "INT_SR.TXT");
+
         if (uruchom_tcbh) {
             std::cout << "\n--- [METODA TCBH] ---" << std::endl;
-            wygenerujSredniDzien(number_of_days, "INT_SR.TXT");
-
             const auto day_profile_tcbh = loadDayProfile("INT_SR.TXT");
-            std::cout << "Odbudowa osi czasu dla profilu sredniego..." << std::endl;
             const auto [timeline_tcbh, max_sim_time_tcbh] = buildTimeline(service_times, day_profile_tcbh);
 
-            // Jeśli zastąpiłeś findPeakHour nową funkcją, zmień to wywołanie na:
-            const GnrResult gnr_tcbh = findPeakHour(timeline_tcbh, 3600.0, 900.0);
+            const GnrResult gnr_tcbh = findPeakHour(timeline_tcbh, window_size, step_size);
+            exportGnrLines(timeline_tcbh, gnr_tcbh, "gnr_linie.txt"); // Zapisujemy linie dla TCBH
+            std::vector<double> chart_data = generateChartErlangs(timeline_tcbh, step_size);
+            // Dedkowany zapis dla Javy
+            std::ofstream out("wyniki.txt");
+            out << "TCBH\n" << gnr_tcbh.max_erlangs << "\n" << gnr_tcbh.window_start << "\nCHART";
+            for(double val : chart_data) out << " " << val;
+            out << "\n";
+            out.close();
 
-            runDiagnostics(service_times, timeline_tcbh);
-            exportGnrLines(timeline_tcbh, gnr_tcbh, "gnr_linie.txt");
+            std::cout << "3.1 TCBH ZAKONCZONE" << std::endl;
 
-            std::cout << "\n=====================================" << std::endl;
-            std::cout << "========= WYNIK METODY TCBH =========" << std::endl;
-            std::cout << "=====================================" << std::endl;
-            std::cout << std::fixed << std::setprecision(2);
-            std::cout << "3.1 TCBH  (Stala godzina szczytu): " << gnr_tcbh.max_erlangs << " Erlangow" << std::endl;
-            std::cout << "    -> W oknie od: " << formatTime(gnr_tcbh.window_start)
-                      << " do: " << formatTime(gnr_tcbh.window_start + gnr_tcbh.window_size) << std::endl;
-        } else {
-            std::cout << "\n3.1 TCBH  (Stala godzina szczytu): POMINIETO" << std::endl;
-        }
-
-        // KROK 4: OBLICZENIA METODĄ 3.2: ADPQH
-        if (uruchom_adpqh) {
+        } else if (uruchom_adpqh) {
             std::cout << "\n--- [METODA ADPQH] ---" << std::endl;
-
-            // Explicitly set window to 15 min (900s) and step to 15 min (900s)
-            GnrResult wynik_adpqh = obliczADPQH(number_of_days, service_times, 900.0, 900.0);
-
-            std::cout << "\n=====================================" << std::endl;
-            std::cout << "========= WYNIK METODY ADPQH ========" << std::endl;
-            std::cout << "=====================================" << std::endl;
-            std::cout << std::fixed << std::setprecision(2);
-            std::cout << "3.2 ADPQH (Ruchomy szczyt 15-min): " << wynik_adpqh.max_erlangs << " Erlangow" << std::endl;
-            std::cout << "=====================================" << std::endl;
-        } else {
-            std::cout << "\n3.2 ADPQH (Ruchomy szczyt 15-min): POMINIETO" << std::endl;
+            // Wywołujemy z oknem i krokiem (wynik sam stworzy wyniki.txt)
+            GnrResult wynik_adpqh = obliczADPQH(number_of_days, service_times, window_size, step_size);
+            std::cout << "3.2 ADPQH ZAKONCZONE" << std::endl;
         }
 
     } catch (const std::exception& e) {

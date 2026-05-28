@@ -14,4 +14,5 @@ void runDiagnostics(const std::vector<double>& service_times,
                     const std::vector<Call>& timeline);
 
 void wyswietlInstrukcje(const char* silnik);
+std::vector<double> generateChartErlangs(const std::vector<Call>& timeline, double step_size);
 #endif //SILNIK_SUPPORTFUNCTIONS_H
