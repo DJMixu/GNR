@@ -6,3 +6,67 @@ PDF/*.synctex.gz
 PDF/*.fdb_latexmk
 PDF/*.fls
 PDF/*.out
+# =========================
+# IDE: IntelliJ / CLion
+# =========================
+.idea/
+*.iml
+*.iws
+
+# =========================
+# Java / Spring Boot / Maven
+# =========================
+target/
+*.jar
+*.war
+
+# =========================
+# Silnik: C/C++ / CLion / CMake
+# =========================
+cmake-build-*/
+build/
+bin/
+*.o
+*.obj
+*.out
+# Pliki wykonywalne i biblioteki - opcjonalnie odkomentuj jeśli nie chcesz ich w repo
+# *.exe
+# *.dll
+# *.so
+# *.dylib
+
+# =========================
+# Dokumentacja: LaTeX
+# =========================
+*.aux
+*.bcf
+*.bbl
+*.blg
+*.idx
+*.ind
+*.lof
+*.lot
+*.out
+*.toc
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.xdv
+*.run.xml
+# *.pdf # <- Odkomentuj tę linijkę, jeśli NIE chcesz wysyłać wygenerowanych PDF-ów na serwer (zalecane)
+
+# =========================
+# Systemowe / Inne
+# =========================
+.DS_Store
+*.log
+# =========================
+# Zbudowane paczki / JRE
+# =========================
+RELEASE/

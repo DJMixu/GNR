@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>GNR analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f3f2f1; }
+
+        .tab-buttons { border-bottom: 2px solid #107c41; margin-bottom: 20px; }
+        .tab-btn { background: none; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; color: #555; }
+        .tab-btn.active { font-weight: bold; color: #107c41; border-bottom: 3px solid #107c41; }
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tab-content.active { display: block; }
+
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 20px; padding: 15px; background: #eef; border-left: 4px solid #107c41; }
+        button.run-btn { background-color: #107c41; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.run-btn:hover { background-color: #0c5e31; }
+
+        .stats-dashboard { display: flex; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px 20px; border-radius: 6px; border-left: 5px solid #107c41; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; }
+        .stat-card h4 { margin: 0 0 5px 0; color: #666; font-size: 12px; text-transform: uppercase; }
+        .stat-card .value { font-size: 24px; font-weight: bold; color: #333; margin: 0; }
+        .stat-card .sub-value { font-size: 12px; color: #888; margin-top: 5px; }
+
+        .workspace { display: flex; gap: 20px; flex-direction: column; }
+        @media(min-width: 1000px) { .workspace { flex-direction: row; } }
+
+        .chart-container { flex: 2; background: white; padding: 15px; border-radius: 4px; border: 1px solid #c8c6c4; }
+        .data-container { flex: 1; max-height: 500px; display: flex; flex-direction: column; }
+
+        .table-description { background: #e1dfdd; padding: 10px 15px; font-size: 13px; color: #333; border-radius: 4px 4px 0 0; border: 1px solid #c8c6c4; border-bottom: none; }
+        .table-scroll { overflow-y: auto; border: 1px solid #c8c6c4; background: white; }
+
+        table.excel-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+        table.excel-table th { background-color: #f3f2f1; border-bottom: 2px solid #c8c6c4; padding: 8px; text-align: left; position: sticky; top: 0; }
+        table.excel-table td { border-bottom: 1px solid #e1dfdd; padding: 6px 8px; }
+        table.excel-table tr:nth-child(even) { background-color: #faf9f8; }
+        table.excel-table tr:hover { background-color: #eef; }
+
+        .faq-section { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .faq-section h4 { color: #107c41; margin-bottom: 8px; font-size: 16px; }
+        .faq-section p { margin-top: 0; color: #444; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<h2>GNR analyzer</h2>
+
+<div class="tab-buttons">
+    <button class="tab-btn active" onclick="switchTab('dane')">Arkusz 1: Obliczenia</button>
+    <button class="tab-btn" onclick="switchTab('faq')">Arkusz 2: FAQ & Pomoc</button>
+</div>
+
+<div id="tab-dane" class="tab-content active">
+
+    <div class="controls">
+        <label>Liczba dni: <input type="number" id="inputDays" value="7" style="width: 50px;"></label>
+        <label>Krok [s]: <input type="number" id="inputStep" value="900" style="width: 60px;" title="Dokładność obliczeń i podział osi X na wykresie (np. 900s = 15 min)"></label>
+        <label>Okno GNR [s]: <input type="number" id="inputWindow" value="3600" style="width: 60px;" title="Wielkość szukanego szczytu (np. 3600s = 1 godzina)"></label>
+
+        <div style="border-left: 2px solid #ccc; height: 30px; margin: 0 10px;"></div>
+
+        <label><input type="radio" name="method" id="radTCBH" value="tcbh" checked> TCBH</label>
+        <label><input type="radio" name="method" id="radADPQH" value="adpqh"> ADPQH</label>
+        <label><input type="checkbox" id="chkForce"> Nadpisz dni</label>
+
+        <button class="run-btn" onclick="runAnalysis()">Uruchom Obliczenia</button>
+        <span id="loading" style="display:none; color: #107c41; font-weight: bold;">Przetwarzanie w C++...</span>
+    </div>
+
+    <div id="dayNavigator" style="display:none; background: #fff; padding: 10px; margin-bottom: 20px; text-align: center; border: 1px solid #c8c6c4; border-radius: 4px;">
+        <button onclick="changeDay(-1)" style="padding: 5px 15px; cursor: pointer; background: #f3f2f1; border: 1px solid #ccc;">&laquo; Poprzedni dzień</button>
+        <strong id="currentDayLabel" style="margin: 0 20px; font-size: 18px; color: #107c41;">Dzień X</strong>
+        <button onclick="changeDay(1)" style="padding: 5px 15px; cursor: pointer; background: #f3f2f1; border: 1px solid #ccc;">Następny dzień &raquo;</button>
+    </div>
+
+    <div class="stats-dashboard">
+        <div class="stat-card">
+            <h4>Metoda</h4>
+            <p class="value" id="uiMethod">--</p>
+            <p class="sub-value">Algorytm agregacji</p>
+        </div>
+        <div class="stat-card">
+            <h4>Ostateczny Wynik GNR</h4>
+            <p class="value"><span id="uiErlangs">--</span> <span style="font-size: 16px; font-weight: normal;">Erl.</span></p>
+            <p class="sub-value" id="uiWindowDesc">Oczekuję na start...</p>
+        </div>
+        <div class="stat-card">
+            <h4>Wykryte połączenia w szczycie</h4>
+            <p class="value" id="uiCalls">--</p>
+            <p class="sub-value">Ilość linii wyciągnięta z profilu CZAS.TXT</p>
+        </div>
+    </div>
+
+    <div class="workspace">
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+
+        <div class="data-container">
+            <div class="table-description">
+                <strong>Tabela Wywołań Szczytowych</strong><br>
+                Lista ukazuje fizyczne połączenia zaczerpnięte ze zbioru <code>CZAS.TXT</code>.
+                Są to czasy obsługi, które algorytm osadził na osi czasu tak, że swoim punktem początkowym lub końcowym "wpadły" one do zaznaczonego obok okna szczytowego.
+            </div>
+            <div class="table-scroll">
+                <table class="excel-table" id="dataTable">
+                    <thead>
+                    <tr><th>Nr. Linii (CZAS.TXT)</th><th>Czas Trwania</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr><td colspan="2" style="text-align: center; color: #888; font-style: italic; padding: 20px;">Brak danych do wyświetlenia</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tab-faq" class="tab-content">
+    <h3>Najczęściej Zadawane Pytania (FAQ)</h3>
+
+    <div class="faq-section">
+        <h4>Czym różni się algorytm TCBH od ADPQH?</h4>
+        <p><strong>TCBH</strong> (Time Consistent Busy Hour) uśrednia natężenie ruchu ze wszystkich dostarczonych dni (minuta po minucie) i buduje jeden sztuczny, "Średni Dzień". Szczyt szukany jest tylko raz, na tym uśrednionym profilu.</p>
+        <p><strong>ADPQH</strong> (Average Daily Peak Quarter Hour) działa odwrotnie. Skanuje każdy z dni całkowicie niezależnie i na każdym znajduje najwyższy szczyt (nawet jeśli pierwszego dnia wypada on rano, a drugiego w nocy). Ostateczny wynik algorytmu to po prostu średnia matematyczna z maksymalnych wartości Erlangów każdego z tych wyodrębnionych dni.</p>
+    </div>
+
+    <div class="faq-section">
+        <h4>Do czego służą parametry Krok i Okno?</h4>
+        <p><strong>Krok [s]:</strong> Definiuje dokładność z jaką przesuwany jest algorytm przeszukujący (np. 900 sekund oznacza, że szukamy szczytu przeskakując co 15 minut). Definiuje to również wielkość słupków na wykresie - każdy słupek reprezentuje średni ruch w jednym takim kroku.</p>
+        <p><strong>Okno [s]:</strong> To szerokość czasowa poszukiwanego "szczytu" GNR. Jeśli okno wynosi 3600 sekund (1 godzina), a krok wynosi 900 sekund (15 minut), to w szczyt wpadają 4 słupki z wykresu.</p>
+    </div>
+
+    <div class="faq-section">
+        <h4>Skąd silnik bierze dane? Czym jest CZAS.TXT a czym INT.TXT?</h4>
+        <p>Plik <code>CZAS.TXT</code> to potężna pula (magazyn) losowych czasów obsługi w sekundach. Z kolei plik <code>INT.TXT</code> to profil ruchu definiujący jak bardzo obciążony ma być system w danej minucie doby.<br>
+            Silnik bierze instrukcję z pliku <code>INT</code>, po czym "wyciąga" odpowiednią liczbę żądań z pliku <code>CZAS</code> i układa je na osi czasu. Tabela wyświetlana na głównym widoku pokazuje, po które dokładnie linijki z magazynu <code>CZAS.TXT</code> sięgnął program w momencie, gdy trwała Godzina Największego Ruchu.</p>
+    </div>
+</div>
+
+<script>
+    let chartInstance = null;
+    let globalDaysData = [];
+    let currentDayIndex = 0;
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    async function runAnalysis() {
+        document.getElementById('loading').style.display = 'inline';
+
+        const days = document.getElementById('inputDays').value;
+        const window = document.getElementById('inputWindow').value;
+        const step = document.getElementById('inputStep').value;
+        const isTCBH = document.getElementById('radTCBH').checked;
+        const force = document.getElementById('chkForce').checked;
+
+        const url = `/api/uruchom?days=${days}&window=${window}&step=${step}&force=${force}&tcbh=${isTCBH}&adpqh=${!isTCBH}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if(data.status === "Błąd") {
+                alert("Wystąpił błąd w silniku C++: \n" + data.wiadomosc);
+                return;
+            }
+
+            document.getElementById('uiMethod').innerText = data.metoda;
+            document.getElementById('uiErlangs').innerText = parseFloat(data.wynikGnr).toFixed(2);
+
+            globalDaysData = data.dni;
+            currentDayIndex = 0;
+            document.getElementById('dayNavigator').style.display = globalDaysData.length > 1 ? "block" : "none";
+
+            renderCurrentDay(step, window);
+
+        } catch (err) {
+            alert("Błąd komunikacji Java z serwerem/C++!");
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    function changeDay(direction) {
+        currentDayIndex += direction;
+        if (currentDayIndex < 0) currentDayIndex = globalDaysData.length - 1;
+        if (currentDayIndex >= globalDaysData.length) currentDayIndex = 0;
+        const step = document.getElementById('inputStep').value;
+        const window = document.getElementById('inputWindow').value;
+        renderCurrentDay(step, window);
+    }
+
+    function renderCurrentDay(stepSec, windowSec) {
+        const dayData = globalDaysData[currentDayIndex];
+        if (!dayData) return;
+
+        document.getElementById('currentDayLabel').innerText = dayData.nazwa;
+
+        const suffix = globalDaysData.length > 1 ? "Wykryty w tym dniu: " : "Szczyt (TCBH): ";
+        document.getElementById('uiWindowDesc').innerText = suffix + parseFloat(dayData.erlangiDnia).toFixed(2) + " Erl";
+
+        const callsCount = dayData.tabela ? dayData.tabela.length : 0;
+        document.getElementById('uiCalls').innerText = callsCount;
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        const peakStart = dayData.peakStartIndex;
+        const peakEnd = peakStart + dayData.binsInWindow;
+
+        // Inteligentne kolorowanie słupków: Jeśli indeks mieści się w Oknie, zaznaczamy go na pomarańczowo.
+        const bgColors = dayData.data.map((_, index) =>
+            (index >= peakStart && index < peakEnd) ? 'rgba(216, 59, 1, 0.9)' : 'rgba(16, 124, 65, 0.5)'
+        );
+        const borderColors = dayData.data.map((_, index) =>
+            (index >= peakStart && index < peakEnd) ? '#d83b01' : '#107c41'
+        );
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dayData.labels,
+                datasets: [{
+                    label: `Ruch [Erlangi] - ${dayData.nazwa}`,
+                    data: dayData.data,
+                    backgroundColor: bgColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Natężenie [Erlangi]', font: {weight: 'bold'} }
+                    },
+                    x: {
+                        title: { display: true, text: `Oś czasu (Jeden słupek = Krok ${stepSec} sekund)` }
+                    }
+                },
+                plugins: {
+                    legend: { display: false } // Ukrywamy zbędną legendę, bo mamy opisy na osiach
+                }
+            }
+        });
+
+        renderTable(dayData.tabela);
+    }
+
+    function renderTable(rows) {
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = '';
+
+        if (!rows || rows.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="2" style="text-align: center; color: #888; font-style: italic; padding: 20px;">Brak wywołań wewnątrz tego szczytu</td>`;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        rows.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>L. ${row.linia}</td><td>${row.czas}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+</script>
+</body>
+</html>
