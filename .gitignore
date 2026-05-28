@@ -59,7 +59,7 @@ bin/
 *.synctex.gz
 *.xdv
 *.run.xml
-# *.pdf # <- Odkomentuj tę linijkę, jeśli NIE chcesz wysyłać wygenerowanych PDF-ów na serwer (zalecane)
+*.pdf # <- Odkomentuj tę linijkę, jeśli NIE chcesz wysyłać wygenerowanych PDF-ów na serwer (zalecane)
 
 # =========================
 # Systemowe / Inne
@@ -81,3 +81,4 @@ RELEASE/
 # =========================
 INT*.TXT
 gnr_*.txt
+!INT.txt
