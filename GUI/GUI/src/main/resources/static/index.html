@@ -49,6 +49,7 @@
         .faq-section { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
         .faq-section h4 { color: #107c41; margin-bottom: 8px; font-size: 16px; }
         .faq-section p { margin-top: 0; color: #444; line-height: 1.6; }
+        .faq-section li { margin-top: 0; color: #444; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -132,12 +133,67 @@
     <div class="faq-section">
         <h4>1. Czym różni się algorytm TCBH od ADPQH?</h4>
         <p><strong>TCBH (Time Consistent Busy Hour - Szczyt Czasowo Spójny):</strong> Klasyczna metoda wymiarowania sieci. Zakłada, że szczyt ruchu występuje o tej samej porze w każdym badanym dniu. Algorytm najpierw matematycznie uśrednia profile ze wszystkich dostarczonych dni (minuta po minucie), tworząc jeden syntetyczny "Średni Dzień". Następnie tylko raz skanuje ten uśredniony profil w poszukiwaniu Godziny Największego Ruchu. Metoda ta jest konserwatywna i często spłaszcza wartości chwilowych, ekstremalnych skoków obciążenia.</p>
+        <div style="text-align: center; margin: 15px 0;">
+            <math display="block">
+                <msub><mi>A</mi><mi>TCBH</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo>
+                <mfrac><mn>1</mn><mi>N</mi></mfrac>
+                <munderover><mo>&sum;</mo><mrow><mi>d</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover>
+                <msub><mi>A</mi><mi>d</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo>
+            </math>
+        </div>
+        <div class="faq-section">
+            <p>Gdzie:</p>
+            <ul>
+                <li><math><msub><mi>A</mi><mi>TCBH</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo></math> – uśrednione natężenie ruchu dla konkretnej minuty/przedziału <math><mi>t</mi></math> w syntetycznym "Średnim Dniu" [Erl]</li>
+                <li><math><mi>N</mi></math> – całkowita liczba analizowanych dni</li>
+                <li><math><msub><mi>A</mi><mi>d</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo></math> – natężenie ruchu w minucie/przedziale <math><mi>t</mi></math> dla konkretnego dnia <math><mi>d</mi></math></li>
+                <li><math><mo>&sum;</mo></math> – symbol sumowania wartości ze wszystkich dni (od dnia <math><mi>d=1</mi></math> do dnia <math><mi>N</mi></math>)</li>
+            </ul>
+        </div>
         <p><strong>ADPQH (Average Daily Peak Quarter Hour - Średni Dzienny Szczyt Ruchomy):</strong> Bardziej elastyczne podejście, lepiej odzwierciedlające realia współczesnych systemów teleinformatycznych. Skanuje każdy z dni całkowicie niezależnie i na każdym z nich odnajduje lokalny szczyt (np. pierwszego dnia szczyt wypadnie o 10:00, a drugiego o 18:00). Ostateczny wynik algorytmu to średnia arytmetyczna z maksymalnych wartości Erlangów wyciągniętych z każdego dnia. Metoda ta jest wrażliwsza na dni o wyjątkowo dużym natężeniu ruchu (tzw. outliery).</p>
+        <div style="text-align: center; margin: 15px 0;">
+            <math display="block">
+                <msub><mi>A</mi><mi>ADPQH</mi></msub><mo>=</mo>
+                <mfrac><mn>1</mn><mi>N</mi></mfrac>
+                <munderover><mo>&sum;</mo><mrow><mi>d</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover>
+                <munder><mo>max</mo><mi>t</mi></munder>
+                <mrow><mo>(</mo><msub><mi>A</mi><mi>d</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><mo>)</mo></mrow>
+            </math>
+        </div>
+        <div class="faq-section">
+            <p>Gdzie:</p>
+            <ul>
+                <li><math><msub><mi>A</mi><mi>ADPQH</mi></msub></math> – ostateczny wynik natężenia ruchu wyznaczony metodą ADPQH [Erl]</li>
+                <li><math><mi>N</mi></math> – całkowita liczba analizowanych dni</li>
+                <li><math><munder><mo>max</mo><mi>t</mi></munder><mo>(</mo><msub><mi>A</mi><mi>d</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><mo>)</mo></math> – maksymalna (szczytowa) wartość ruchu odnaleziona w danym dniu <math><mi>d</mi></math> poprzez przeszukanie wszystkich przedziałów czasowych <math><mi>t</mi></math></li>
+            </ul>
+        </div>
     </div>
 
     <div class="faq-section">
         <h4>2. Co oznacza jednostka Erlang [Erl]?</h4>
         <p>Erlang to bezwymiarowa jednostka natężenia ruchu telekomunikacyjnego, nazwana na cześć duńskiego matematyka A.K. Erlanga, twórcy teorii masowej obsługi. <strong>1 Erlang oznacza ciągłe, nieprzerwane zajęcie jednego kanału (np. linii telefonicznej lub serwera) przez określony czas obserwacji.</strong> Jeżeli w ciągu godziny zaobserwowaliśmy łączny czas obsługi równy 3600 sekund, natężenie ruchu wynosi równe 1 Erl. Wartość wynosząca np. 15.5 Erl oznacza, że do obsłużenia tego ruchu ze stuprocentową skutecznością w tym konkretnym przedziale czasu, system potrzebowałby minimum 16 niezależnych kanałów.</p>
+        <div style="text-align: center; margin: 15px 0;">
+            <math display="block">
+                <mi>A</mi><mo>=</mo>
+                <mfrac>
+                    <mrow><munderover><mo>&sum;</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>t</mi><mi>i</mi></msub></mrow>
+                    <mi>T</mi>
+                </mfrac>
+                <mo>=</mo><mi>&lambda;</mi><mo>&middot;</mo><mi>E</mi><mo>(</mo><msub><mi>t</mi><mi>s</mi></msub><mo>)</mo>
+            </math>
+        </div>
+        <div class="faq-section">
+            <p>Gdzie:</p>
+            <ul>
+                <li><math><mi>A</mi></math> – natężenie ruchu telekomunikacyjnego [Erl]</li>
+                <li><math><mi>n</mi></math> – łączna liczba wszystkich zgłoszeń (połączeń) zarejestrowanych w okresie obserwacji</li>
+                <li><math><msub><mi>t</mi><mi>i</mi></msub></math> – czas trwania pojedynczego, <math><mi>i</mi></math>-tego połączenia [s]</li>
+                <li><math><mi>T</mi></math> – całkowity czas prowadzenia obserwacji (np. dla jednej godziny wynosi 3600 sekund) [s]</li>
+                <li><math><mi>&lambda;</mi></math> (lambda) – intensywność napływu nowych zgłoszeń (liczba zgłoszeń na jednostkę czasu)</li>
+                <li><math><mi>E</mi><mo>(</mo><msub><mi>t</mi><mi>s</mi></msub><mo>)</mo></math> – wartość oczekiwana (średnia) czasu obsługi pojedynczego zgłoszenia [s]</li>
+            </ul>
+        </div>
     </div>
 
     <div class="faq-section">
@@ -145,6 +201,19 @@
         <p>Nasza aplikacja korzysta z numerycznej metody przesuwania okna czasowego (tzw. "koszykowania" zdarzeń):</p>
         <p><strong>Krok [s]:</strong> Definiuje rozdzielczość (dyskretyzację) osi czasu. Jeśli Krok = 900 s, algorytm tnie dobę na 15-minutowe segmenty (tzw. bins) i wewnątrz nich sumuje czas trwających zdarzeń. Decyduje on również o gęstości słupków widocznych na wykresie.</p>
         <p><strong>Okno [s]:</strong> To szerokość przestrzenna naszego poszukiwanego szczytu (GNR). Reprezentuje szkiełko powiększające, którym algorytm "suwa" po wykresie. Jeśli okno wynosi 3600 s, a krok 900 s, oznacza to, że algorytm grupuje i sumuje wartości z zawsze 4 sąsiadujących ze sobą słupków, w poszukiwaniu ich najwyższej wspólnej sumy.</p>
+        <div style="text-align: center; margin: 15px 0;">
+            <math display="block">
+                <mtext>Liczba słupków</mtext><mo>=</mo><mfrac><mtext>Okno</mtext><mtext>Krok</mtext></mfrac>
+            </math>
+        </div>
+        <div class="faq-section">
+            <p>Gdzie:</p>
+            <ul>
+                <li><strong>Liczba słupków</strong> – liczba sąsiadujących ze sobą segmentów (koszyków), z których dane są sumowane w trakcie jednego kroku algorytmu</li>
+                <li><strong>Okno</strong> – szerokość przedziału czasowego szukanego szczytu, wyrażona w sekundach (np. 3600 s dla pełnej godziny)</li>
+                <li><strong>Krok</strong> – szerokość pojedynczego słupka (rozdzielczość analizy), wyrażona w sekundach (np. 900 s dla 15 minut)</li>
+            </ul>
+        </div>
     </div>
 
     <div class="faq-section">
@@ -152,9 +221,27 @@
         <p>Program modeluje zjawisko ruchu przy użyciu procesów stochastycznych (losowych):</p>
         <p><strong>INT.TXT (Profil Dnia):</strong> Definiuje zmienność natężenia zgłoszeń w każdej minucie doby. Wyraża on tzw. <strong>parametr intensywności zgłoszeń (zwykle oznaczany jako λ)</strong>, charakterystyczny dla rozkładu Poissona, który opisuje częstotliwość napływania nowych klientów do systemu.</p>
         <p><strong>CZAS.TXT (Magazyn Obsługi):</strong> Zbiór losowych czasów trwania samych połączeń (tzw. czasów trzymania). Silnik integruje te dwie informacje: patrzy na INT.TXT, widzi "w tej minucie λ jest wysoka", więc dynamicznie przypisuje tej minucie dużo zgłoszeń, po czym dla każdego zgłoszenia pobiera długość jego trwania z bazy CZAS.TXT. Tabela z prawej strony ekranu wizualizuje to mapowanie – pokazuje wprost, które konkretnie wiersze z magazynu "zapchały" nasze szczytowe okno.</p>
+        <div style="text-align: center; margin: 15px 0;">
+            <math display="block">
+                <mi>P</mi><mo>(</mo><mi>X</mi><mo>=</mo><mi>k</mi><mo>)</mo><mo>=</mo>
+                <mfrac>
+                    <mrow><msup><mi>&lambda;</mi><mi>k</mi></msup><mo>&middot;</mo><msup><mi>e</mi><mrow><mo>-</mo><mi>&lambda;</mi></mrow></msup></mrow>
+                    <mrow><mi>k</mi><mo>!</mo></mrow>
+                </mfrac>
+            </math>
+        </div>
+        <div class="faq-section">
+        <p>Gdzie:</p>
+        <ul>
+            <li><math><mi>P</mi><mo>(</mo><mi>X</mi><mo>=</mo><mi>k</mi><mo>)</mo></math> – prawdopodobieństwo tego, że w wybranym przedziale czasu pojawi się dokładnie <math><mi>k</mi></math> nowych zgłoszeń</li>
+            <li><math><mi>&lambda;</mi></math> (lambda) – średnia oczekiwana liczba zgłoszeń w danym przedziale czasu (intensywność)</li>
+            <li><math><mi>e</mi></math> – podstawa logarytmu naturalnego (stała matematyczna, w przybliżeniu wynosi 2.71828)</li>
+            <li><math><mi>k</mi></math> – dokładna liczba zgłoszeń, dla której liczymy prawdopodobieństwo (<math><mi>k</mi><mo>=</mo><mn>0, 1, 2, ...</mn></math>)</li>
+            <li><math><mi>k</mi><mo>!</mo></math> – silnia liczby <math><mi>k</mi></math> (iloczyn wszystkich liczb całkowitych od 1 do <math><mi>k</mi></math>)</li>
+        </ul>
+        </div>
     </div>
 </div>
-
 <script>
     /* ==========================================
        LOGIKA FRONTENDU (JavaScript)
