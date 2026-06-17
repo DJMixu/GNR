@@ -8,7 +8,18 @@
 #include <vector>
 
 #include "models.h"
-
+/**
+ * @brief Buduje chronologiczną oś czasu (harmonogram) połączeń dla pojedynczego dnia.
+ * * Funkcja integruje surowe czasy obsługi z dobowym profilem ruchu. Logika działania:
+ * 1. Oblicza współczynnik skalowania, aby dopasować łączną liczbę dostępnych czasów obsługi do sumarycznego natężenia ruchu w profilu.
+ * 2. Dla każdej minuty doby wylicza, ile zgłoszeń powinno w niej wystąpić (proporcjonalnie do jej wagi, tzw. lambdy).
+ * 3. Równomiernie rozkłada wyliczoną liczbę zgłoszeń na przestrzeni 60 sekund wewnątrz danej minuty.
+ * 4. Każdemu zgłoszeniu przypisuje dokładny czas rozpoczęcia, pobiera kolejny czas trwania z puli i wyznacza czas jego zakończenia.
+ * Algorytm posiada zabezpieczenia brzegowe – dba o to, aby nie przekroczyć rozmiaru tablicy i gwarantuje, że wszystkie wczytane czasy obsługi zostaną w pełni wykorzystane (korekta w ostatniej iteracji).
+ * * @param service_times Zbiór dostępnych czasów obsługi, które po kolei są przypisywane do generowanych zgłoszeń.
+ * @param day_profile Wektor ze statystykami, definiujący kształt rozkładu obciążenia w trakcie trwania całej doby.
+ * @return TimelineResult Obiekt agregujący gotową listę połączeń umiejscowionych na osi czasu oraz maksymalny, końcowy czas symulacji.
+ */
 TimelineResult buildTimeline(const std::vector<double>& service_times,
                               const std::vector<MinuteStat>& day_profile)
 {
@@ -31,6 +42,8 @@ TimelineResult buildTimeline(const std::vector<double>& service_times,
         if (num_calls <= 0) continue;
 
         const double minute_start_s = day_profile[i].minute * 60.0;
+        // Jeśli w minucie mamy np. 4 zgłoszenia, dzielimy 60 sekund przez 4,
+        // co daje interwał 15 sekund między kolejnymi połączeniami.
         const double interval_s     = 60.0 / num_calls;
 
         for (int c = 0; c < num_calls; ++c) {

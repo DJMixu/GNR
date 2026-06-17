@@ -11,7 +11,16 @@
 #include "models.h"
 #include <cmath>
 #include <algorithm>
-
+/**
+ * @brief Generuje dane do wykresu natężenia ruchu (w Erlangach) w ujęciu dobowym.
+ * * Funkcja dzieli dobę na równe przedziały czasowe (tzw. koszyki, zgodnie z zadanym krokiem)
+ * i precyzyjnie zlicza czas trwania wszystkich połączeń wewnątrz każdego z nich.
+ * Na koniec sumaryczny czas aktywności w danym przedziale jest dzielony przez jego szerokość,
+ * co pozwala na przejście z jednostek czasu na ustandaryzowaną miarę natężenia ruchu wyrażoną w Erlangach.
+ * * @param timeline Oś czasu zawierająca zestawienie wszystkich połączeń z danej doby.
+ * @param step_size Rozdzielczość wykresu (szerokość jednego przedziału w sekundach, np. 900 dla 15 minut).
+ * @return std::vector<double> Wektor wyliczonych wartości w Erlangach, służący jako podstawa do narysowania wykresu.
+ */
 std::vector<double> generateChartErlangs(const std::vector<Call>& timeline, double step_size) {
     if (step_size <= 0.0) return {};
 
@@ -26,7 +35,8 @@ std::vector<double> generateChartErlangs(const std::vector<Call>& timeline, doub
         for (int b = start_bin; b <= end_bin; ++b) {
             double bin_start = b * step_size;
             double bin_end   = bin_start + step_size;
-
+            // Obliczamy część wspólną (przecięcie) czasu trwania połączenia z granicami aktualnego koszyka.
+            // Jeśli overlap_end > overlap_start, oznacza to, że połączenie faktycznie miało miejsce w tym przedziale.
             double overlap_start = std::max(call.start_time, bin_start);
             double overlap_end   = std::min(call.end_time, bin_end);
 
@@ -42,6 +52,14 @@ std::vector<double> generateChartErlangs(const std::vector<Call>& timeline, doub
     }
     return bins;
 }
+/**
+ * @brief Formatuje czas podany w sekundach do czytelnej postaci tekstowej (HH:MM:SS).
+ * * Funkcja pomocnicza służąca wyłącznie do celów prezentacyjnych. Przelicza sekundy
+ * biegnące od północy na standardowy format zegarowy. Ułatwia to użytkownikom
+ * i osobom analizującym raporty łatwe zinterpretowanie przedziałów czasowych.
+ * * @param s Czas wyrażony w sekundach (od początku doby).
+ * @return std::string Sformatowany ciąg znaków w postaci "GG:MM:SS".
+ */
 std::string formatTime(double s) {
     long long total_seconds = s;
     int hours   = total_seconds / 3600;
@@ -52,7 +70,17 @@ std::string formatTime(double s) {
     snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hours, minutes, seconds);
     return std::string(buffer);
 }
-
+/**
+ * @brief Przeprowadza wewnętrzne testy poprawności modelu ruchu (Sanity Check).
+ * * Funkcja weryfikuje, czy proces generowania osi czasu przebiegł prawidłowo i bezstratnie.
+ * Odbywa się to poprzez trzy główne testy:
+ * 1. Test ilościowy: Sprawdza, czy żadne zgłoszenie nie zostało zagubione podczas przetwarzania.
+ * 2. Test sumy czasów: Weryfikuje, czy łączny czas obsługi w oryginale i na wygenerowanej osi zgadza się niemal do milisekundy.
+ * 3. Test logiki czasowej: Potwierdza, czy każde pojedyncze połączenie zachowuje ciągłość (czas początku + czas trwania = czas końca).
+ * Zaliczenie testów daje prowadzącemu gwarancję wiarygodności przeprowadzonych symulacji.
+ * * @param service_times Wzorzec bazowy, czyli czasy obsługi bezpośrednio wczytane z plików.
+ * @param timeline Zbudowana oś czasu zdarzeń, która podlega weryfikacji.
+ */
 void runDiagnostics(const std::vector<double>& service_times,
                     const std::vector<Call>& timeline)
 {
@@ -90,7 +118,13 @@ void runDiagnostics(const std::vector<double>& service_times,
               << std::endl;
     std::cout << "===========================================\n" << std::endl;
 }
-
+/**
+ * @brief Wyświetla instrukcję obsługi aplikacji z poziomu konsoli.
+ * * Funkcja interfejsu użytkownika aktywowana wywołaniem flagi pomocy (np. -h, --help).
+ * Tłumaczy dostępne argumenty wywołania programu, pozwalając na łatwe zapoznanie się
+ * z możliwościami sterowania analizą (np. wybór metody TCBH/ADPQH, zmiana liczby dni).
+ * * @param silnik Pełna nazwa uruchamianego programu (pliku wykonywalnego).
+ */
 void wyswietlInstrukcje(const char* silnik) {
     std::cout << "Uzycie: " << silnik << " [opcje]\n"
               << "Opcje:\n"

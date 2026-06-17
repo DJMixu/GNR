@@ -12,7 +12,20 @@
 #include "timeLineBuilder.h"
 #include "generateDay.h"
 #include "srDzien.h"
-
+/**
+ * @brief Główny punkt wejścia aplikacji, sterujący całym procesem analizy ruchu telekomunikacyjnego.
+ * * Funkcja pełni rolę "centrum dowodzenia" dla całego programu. Jej główne zadania to:
+ * 1. Odbiór i parsowanie flag z konsoli (pozwala to na łatwe sterowanie programem z zewnątrz,
+ * np. wybór metody TCBH/ADPQH, zmiana długości okna, kroków czy liczby dni).
+ * 2. Inicjalizacja środowiska pracy – wczytanie bazowych czasów obsługi ("CZAS.TXT").
+ * 3. Weryfikacja plików wejściowych – upewnia się, że mamy odpowiednią liczbę dni do analizy (ewentualnie je generuje).
+ * 4. Stworzenie uśrednionego profilu dnia ("INT_SR.TXT"), który jest wymagany m.in. przez metodę TCBH.
+ * 5. Uruchomienie właściwych obliczeń dla wybranej metody i przechwycenie ewentualnych błędów,
+ * aby program nie zamknął się awaryjnie w niekontrolowany sposób.
+ * * @param argc Liczba argumentów przekazanych przy uruchamianiu programu z wiersza poleceń.
+ * @param argv Tablica zawierająca te argumenty w formie tekstowej (nasze flagi i parametry).
+ * @return int Kod wyjścia programu (0 oznacza pełny sukces, 1 oznacza zakończenie z błędem krytycznym).
+ */
 int main(int argc, char* argv[]) {
     int number_of_days = 7;
     bool force_overwrite = false;
@@ -40,7 +53,7 @@ int main(int argc, char* argv[]) {
             uruchom_adpqh = true; uruchom_tcbh = false;
         }
     }
-
+    // Zabezpieczenie przed awarią programu w przypadku braku plików wejściowych na dysku lub błędów w formatowaniu danych
     try {
         const auto service_times = loadServiceTimes("CZAS.TXT");
 
@@ -48,7 +61,6 @@ int main(int argc, char* argv[]) {
                   << (force_overwrite ? "TAK" : "NIE") << ")..." << std::endl;
         ensure_days_exist("INT.TXT", number_of_days, force_overwrite);
 
-        // ZAWSZE generuj średni dzień dla Javy
         wygenerujSredniDzien(number_of_days, "INT_SR.TXT");
 
         if (uruchom_tcbh) {
@@ -59,7 +71,6 @@ int main(int argc, char* argv[]) {
             const GnrResult gnr_tcbh = findPeakHour(timeline_tcbh, window_size, step_size);
             exportGnrLines(timeline_tcbh, gnr_tcbh, "gnr_linie.txt"); // Zapisujemy linie dla TCBH
             std::vector<double> chart_data = generateChartErlangs(timeline_tcbh, step_size);
-            // Dedkowany zapis dla Javy
             std::ofstream out("wyniki.txt");
             out << "TCBH\n" << gnr_tcbh.max_erlangs << "\n" << gnr_tcbh.window_start << "\nCHART";
             for(double val : chart_data) out << " " << val;

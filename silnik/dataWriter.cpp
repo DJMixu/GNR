@@ -15,7 +15,18 @@
 #include "supportFunctions.h"
 
 
-
+/**
+ * @brief Eksportuje szczegóły połączeń tworzących Godzinę Największego Ruchu (GNR) do pliku tekstowego.
+ * * Funkcja generuje czytelny raport z analizy. W nagłówku zapisuje parametry wyznaczonego okna GNR
+ * (zakres czasowy oraz wyliczony ruch w Erlangach). Następnie przeszukuje całą dobę i wylistowuje
+ * tylko te zgłoszenia, które czasowo pokrywają się ze szczytem ruchu. Pozwala to w łatwy sposób
+ * zweryfikować, z jakich konkretnie zdarzeń (numer linii, czas obsługi) wynika obliczony wynik.
+ * Na koniec wyświetla w konsoli krótkie podsumowanie z liczbą znalezionych zgłoszeń.
+ * * @param timeline Kompletna oś czasu zawierająca wszystkie wygenerowane połączenia.
+ * @param gnr Obiekt zawierający wyniki uprzednio przeprowadzonej analizy GNR.
+ * @param filename Nazwa i ścieżka pliku wyjściowego, w którym zostanie zapisany raport.
+ * @throws std::runtime_error Jeśli aplikacja nie może utworzyć pliku we wskazanym miejscu.
+ */
 void exportGnrLines(const std::vector<Call>& timeline,
                     const GnrResult& gnr,
                     const std::string& filename)

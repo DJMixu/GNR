@@ -9,7 +9,19 @@
 #include <vector>
 
 #include "models.h"
-
+/**
+ * @brief Algorytm wyznaczający Godzinę Największego Ruchu (GNR) na podstawie zarejestrowanych połączeń.
+ * * Funkcja analizuje dobową oś czasu i szuka przedziału o największym obciążeniu.
+ * Logika działania opiera się na technice przesuwnego okna (sliding window) oraz dyskretyzacji czasu:
+ * 1. Cała doba dzielona jest na tzw. koszyki (odcinki czasu o długości determinowanej przez krok).
+ * 2. Dla każdego połączenia algorytm precyzyjnie zlicza, ile sekund jego trwania wpada do poszczególnych koszyków.
+ * 3. Następnie "okno" badawcze przesuwa się wzdłuż doby, sumując zgromadzony w koszykach ruch.
+ * 4. Okno o największej sumie czasu aktywności jest odnajdywane i przeliczane na miarę natężenia ruchu w Erlangach.
+ * * @param timeline Zbiór (wektor) zarejestrowanych połączeń, gdzie każde posiada swój czas początku i końca.
+ * @param window_size Szerokość szukanego okna szczytowego w sekundach (np. 3600 dla pełnej godziny).
+ * @param step_size Rozdzielczość badania (w sekundach). Określa, jak dokładnie dzielimy dobę i o ile przesuwamy okno.
+ * @return GnrResult Obiekt agregujący wyniki: maksymalne natężenie ruchu (Erlangi), punkt początkowy okna szczytowego oraz jego szerokość.
+ */
 GnrResult findPeakHour (const std::vector<Call>& timeline, double window_size, double step_size) {
     // Podstawowe zabezpieczenie przed niepoprawnymi parametrami
     if (step_size <= 0.0 || window_size <= 0.0 || window_size < step_size) {
@@ -34,7 +46,8 @@ GnrResult findPeakHour (const std::vector<Call>& timeline, double window_size, d
         for (int b = start_bin; b <= end_bin; ++b) {
             double bin_start = b * step_size;
             double bin_end   = bin_start + step_size;
-
+            // Obliczamy część wspólną (przecięcie) czasu trwania połączenia z granicami aktualnego koszyka.
+            // Jeśli overlap_end > overlap_start, oznacza to, że połączenie faktycznie miało miejsce w tym przedziale.
             double overlap_start = std::max(call.start_time, bin_start);
             double overlap_end   = std::min(call.end_time, bin_end);
 
@@ -44,7 +57,6 @@ GnrResult findPeakHour (const std::vector<Call>& timeline, double window_size, d
         }
     }
 
-    // --- KROK 2: Przesuwne okno grupujące koszyki ---
     double max_active_time = 0.0;
     int best_start_bin = 0;
 
@@ -63,7 +75,6 @@ GnrResult findPeakHour (const std::vector<Call>& timeline, double window_size, d
         }
     }
 
-    // --- KROK 3: Wyliczenie wyników i stworzenie obiektu GnrResult ---
     double max_erlangs = max_active_time / window_size;
     double window_start_time = best_start_bin * step_size;
 
