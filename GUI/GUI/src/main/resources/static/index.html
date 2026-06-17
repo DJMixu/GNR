@@ -5,30 +5,37 @@
     <title>GNR analyzer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* --- GŁÓWNE STYLE INTERFEJSU --- */
+        /* Zastosowano jasny, czysty motyw inspirowany aplikacjami biurowymi dla zachowania profesjonalizmu na prezentacji projektu */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f3f2f1; }
 
+        /* Style dla zakładek (Tabs) sterujących widokami */
         .tab-buttons { border-bottom: 2px solid #107c41; margin-bottom: 20px; }
         .tab-btn { background: none; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; color: #555; }
         .tab-btn.active { font-weight: bold; color: #107c41; border-bottom: 3px solid #107c41; }
         .tab-content { display: none; background: white; padding: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab-content.active { display: block; }
 
+        /* Panel sterowania symulacją (górna belka) */
         .controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 20px; padding: 15px; background: #eef; border-left: 4px solid #107c41; }
         button.run-btn { background-color: #107c41; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.run-btn:hover { background-color: #0c5e31; }
 
+        /* Dashboard ze statystykami - kafelki */
         .stats-dashboard { display: flex; gap: 15px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 15px 20px; border-radius: 6px; border-left: 5px solid #107c41; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; }
         .stat-card h4 { margin: 0 0 5px 0; color: #666; font-size: 12px; text-transform: uppercase; }
         .stat-card .value { font-size: 24px; font-weight: bold; color: #333; margin: 0; }
         .stat-card .sub-value { font-size: 12px; color: #888; margin-top: 5px; }
 
+        /* Przestrzeń robocza - podział na wykres (lewa) i tabelę (prawa) */
         .workspace { display: flex; gap: 20px; flex-direction: column; }
         @media(min-width: 1000px) { .workspace { flex-direction: row; } }
 
         .chart-container { flex: 2; background: white; padding: 15px; border-radius: 4px; border: 1px solid #c8c6c4; }
         .data-container { flex: 1; max-height: 500px; display: flex; flex-direction: column; }
 
+        /* Stylizacja tabeli wynikowej zgłoszeń */
         .table-description { background: #e1dfdd; padding: 10px 15px; font-size: 13px; color: #333; border-radius: 4px 4px 0 0; border: 1px solid #c8c6c4; border-bottom: none; }
         .table-scroll { overflow-y: auto; border: 1px solid #c8c6c4; background: white; }
 
@@ -38,6 +45,7 @@
         table.excel-table tr:nth-child(even) { background-color: #faf9f8; }
         table.excel-table tr:hover { background-color: #eef; }
 
+        /* Sekcja FAQ */
         .faq-section { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
         .faq-section h4 { color: #107c41; margin-bottom: 8px; font-size: 16px; }
         .faq-section p { margin-top: 0; color: #444; line-height: 1.6; }
@@ -49,7 +57,7 @@
 
 <div class="tab-buttons">
     <button class="tab-btn active" onclick="switchTab('dane')">Arkusz 1: Obliczenia</button>
-    <button class="tab-btn" onclick="switchTab('faq')">Arkusz 2: FAQ & Pomoc</button>
+    <button class="tab-btn" onclick="switchTab('faq')">Arkusz 2: FAQ & Pomoc (Teoria)</button>
 </div>
 
 <div id="tab-dane" class="tab-content active">
@@ -119,32 +127,47 @@
 </div>
 
 <div id="tab-faq" class="tab-content">
-    <h3>Najczęściej Zadawane Pytania (FAQ)</h3>
+    <h3>Zrozumienie Analizy Ruchu Telekomunikacyjnego (Teoria)</h3>
 
     <div class="faq-section">
-        <h4>Czym różni się algorytm TCBH od ADPQH?</h4>
-        <p><strong>TCBH</strong> (Time Consistent Busy Hour) uśrednia natężenie ruchu ze wszystkich dostarczonych dni (minuta po minucie) i buduje jeden sztuczny, "Średni Dzień". Szczyt szukany jest tylko raz, na tym uśrednionym profilu.</p>
-        <p><strong>ADPQH</strong> (Average Daily Peak Quarter Hour) działa odwrotnie. Skanuje każdy z dni całkowicie niezależnie i na każdym znajduje najwyższy szczyt (nawet jeśli pierwszego dnia wypada on rano, a drugiego w nocy). Ostateczny wynik algorytmu to po prostu średnia matematyczna z maksymalnych wartości Erlangów każdego z tych wyodrębnionych dni.</p>
+        <h4>1. Czym różni się algorytm TCBH od ADPQH?</h4>
+        <p><strong>TCBH (Time Consistent Busy Hour - Szczyt Czasowo Spójny):</strong> Klasyczna metoda wymiarowania sieci. Zakłada, że szczyt ruchu występuje o tej samej porze w każdym badanym dniu. Algorytm najpierw matematycznie uśrednia profile ze wszystkich dostarczonych dni (minuta po minucie), tworząc jeden syntetyczny "Średni Dzień". Następnie tylko raz skanuje ten uśredniony profil w poszukiwaniu Godziny Największego Ruchu. Metoda ta jest konserwatywna i często spłaszcza wartości chwilowych, ekstremalnych skoków obciążenia.</p>
+        <p><strong>ADPQH (Average Daily Peak Quarter Hour - Średni Dzienny Szczyt Ruchomy):</strong> Bardziej elastyczne podejście, lepiej odzwierciedlające realia współczesnych systemów teleinformatycznych. Skanuje każdy z dni całkowicie niezależnie i na każdym z nich odnajduje lokalny szczyt (np. pierwszego dnia szczyt wypadnie o 10:00, a drugiego o 18:00). Ostateczny wynik algorytmu to średnia arytmetyczna z maksymalnych wartości Erlangów wyciągniętych z każdego dnia. Metoda ta jest wrażliwsza na dni o wyjątkowo dużym natężeniu ruchu (tzw. outliery).</p>
     </div>
 
     <div class="faq-section">
-        <h4>Do czego służą parametry Krok i Okno?</h4>
-        <p><strong>Krok [s]:</strong> Definiuje dokładność z jaką przesuwany jest algorytm przeszukujący (np. 900 sekund oznacza, że szukamy szczytu przeskakując co 15 minut). Definiuje to również wielkość słupków na wykresie - każdy słupek reprezentuje średni ruch w jednym takim kroku.</p>
-        <p><strong>Okno [s]:</strong> To szerokość czasowa poszukiwanego "szczytu" GNR. Jeśli okno wynosi 3600 sekund (1 godzina), a krok wynosi 900 sekund (15 minut), to w szczyt wpadają 4 słupki z wykresu.</p>
+        <h4>2. Co oznacza jednostka Erlang [Erl]?</h4>
+        <p>Erlang to bezwymiarowa jednostka natężenia ruchu telekomunikacyjnego, nazwana na cześć duńskiego matematyka A.K. Erlanga, twórcy teorii masowej obsługi. <strong>1 Erlang oznacza ciągłe, nieprzerwane zajęcie jednego kanału (np. linii telefonicznej lub serwera) przez określony czas obserwacji.</strong> Jeżeli w ciągu godziny zaobserwowaliśmy łączny czas obsługi równy 3600 sekund, natężenie ruchu wynosi równe 1 Erl. Wartość wynosząca np. 15.5 Erl oznacza, że do obsłużenia tego ruchu ze stuprocentową skutecznością w tym konkretnym przedziale czasu, system potrzebowałby minimum 16 niezależnych kanałów.</p>
     </div>
 
     <div class="faq-section">
-        <h4>Skąd silnik bierze dane? Czym jest CZAS.TXT a czym INT.TXT?</h4>
-        <p>Plik <code>CZAS.TXT</code> to potężna pula (magazyn) losowych czasów obsługi w sekundach. Z kolei plik <code>INT.TXT</code> to profil ruchu definiujący jak bardzo obciążony ma być system w danej minucie doby.<br>
-            Silnik bierze instrukcję z pliku <code>INT</code>, po czym "wyciąga" odpowiednią liczbę żądań z pliku <code>CZAS</code> i układa je na osi czasu. Tabela wyświetlana na głównym widoku pokazuje, po które dokładnie linijki z magazynu <code>CZAS.TXT</code> sięgnął program w momencie, gdy trwała Godzina Największego Ruchu.</p>
+        <h4>3. Do czego służą parametry Krok i Okno w algorytmie przesuwnym (Sliding Window)?</h4>
+        <p>Nasza aplikacja korzysta z numerycznej metody przesuwania okna czasowego (tzw. "koszykowania" zdarzeń):</p>
+        <p><strong>Krok [s]:</strong> Definiuje rozdzielczość (dyskretyzację) osi czasu. Jeśli Krok = 900 s, algorytm tnie dobę na 15-minutowe segmenty (tzw. bins) i wewnątrz nich sumuje czas trwających zdarzeń. Decyduje on również o gęstości słupków widocznych na wykresie.</p>
+        <p><strong>Okno [s]:</strong> To szerokość przestrzenna naszego poszukiwanego szczytu (GNR). Reprezentuje szkiełko powiększające, którym algorytm "suwa" po wykresie. Jeśli okno wynosi 3600 s, a krok 900 s, oznacza to, że algorytm grupuje i sumuje wartości z zawsze 4 sąsiadujących ze sobą słupków, w poszukiwaniu ich najwyższej wspólnej sumy.</p>
+    </div>
+
+    <div class="faq-section">
+        <h4>4. Teoria Kolejek: Czym jest CZAS.TXT, INT.TXT i współczynnik współczynnik λ?</h4>
+        <p>Program modeluje zjawisko ruchu przy użyciu procesów stochastycznych (losowych):</p>
+        <p><strong>INT.TXT (Profil Dnia):</strong> Definiuje zmienność natężenia zgłoszeń w każdej minucie doby. Wyraża on tzw. <strong>parametr intensywności zgłoszeń (zwykle oznaczany jako λ)</strong>, charakterystyczny dla rozkładu Poissona, który opisuje częstotliwość napływania nowych klientów do systemu.</p>
+        <p><strong>CZAS.TXT (Magazyn Obsługi):</strong> Zbiór losowych czasów trwania samych połączeń (tzw. czasów trzymania). Silnik integruje te dwie informacje: patrzy na INT.TXT, widzi "w tej minucie λ jest wysoka", więc dynamicznie przypisuje tej minucie dużo zgłoszeń, po czym dla każdego zgłoszenia pobiera długość jego trwania z bazy CZAS.TXT. Tabela z prawej strony ekranu wizualizuje to mapowanie – pokazuje wprost, które konkretnie wiersze z magazynu "zapchały" nasze szczytowe okno.</p>
     </div>
 </div>
 
 <script>
-    let chartInstance = null;
-    let globalDaysData = [];
-    let currentDayIndex = 0;
+    /* ==========================================
+       LOGIKA FRONTENDU (JavaScript)
+       ========================================== */
 
+    let chartInstance = null;
+    let globalDaysData = []; // Cache na dane zwrócone przez API
+    let currentDayIndex = 0; // Śledzenie aktualnie wyświetlanego dnia (dla ADPQH)
+
+    /**
+     * @brief Prosty mechanizm zarządzania widocznością zakładek.
+     * Dodaje i usuwa klasy CSS 'active' dla przycisków i divów.
+     */
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -152,33 +175,46 @@
         event.currentTarget.classList.add('active');
     }
 
+    /**
+     * @brief Główny silnik uruchamiający analizę.
+     * Zbieramy parametry wejściowe, budujemy URL dla Spring Boot, wykonujemy asynchronicznego Fetch-a,
+     * parsujemy JSONa z wynikami i dystrybuujemy dane na widok HTML.
+     */
     async function runAnalysis() {
         document.getElementById('loading').style.display = 'inline';
 
+        // 1. Pobranie danych z kontrolek
         const days = document.getElementById('inputDays').value;
         const window = document.getElementById('inputWindow').value;
         const step = document.getElementById('inputStep').value;
         const isTCBH = document.getElementById('radTCBH').checked;
         const force = document.getElementById('chkForce').checked;
 
+        // 2. Budowa zapytania GET do naszego Spring Boot REST Controller
         const url = `/api/uruchom?days=${days}&window=${window}&step=${step}&force=${force}&tcbh=${isTCBH}&adpqh=${!isTCBH}`;
 
         try {
             const response = await fetch(url);
             const data = await response.json();
 
+            // Zabezpieczenie przed błędem z poziomu C++ (np. brak plików wejściowych)
             if(data.status === "Błąd") {
                 alert("Wystąpił błąd w silniku C++: \n" + data.wiadomosc);
                 return;
             }
 
+            // 3. Wypełnienie głównych statystyk Dashboardu
             document.getElementById('uiMethod').innerText = data.metoda;
             document.getElementById('uiErlangs').innerText = parseFloat(data.wynikGnr).toFixed(2);
 
+            // Zapisanie danych o poszczególnych dniach z JSONa
             globalDaysData = data.dni;
             currentDayIndex = 0;
+
+            // Pokaż panel nawigacji między dniami tylko jeśli mamy więcej niż 1 dzień (czyli ADPQH)
             document.getElementById('dayNavigator').style.display = globalDaysData.length > 1 ? "block" : "none";
 
+            // 4. Inicjalizacja wykresu dla pierwszego dnia z listy
             renderCurrentDay(step, window);
 
         } catch (err) {
@@ -188,34 +224,51 @@
         }
     }
 
+    /**
+     * @brief Metoda pomocnicza nawigacji po dniach.
+     * @param {number} direction Wartość 1 (następny) lub -1 (poprzedni). Obejmuje logikę zapętlania.
+     */
     function changeDay(direction) {
         currentDayIndex += direction;
+
+        // Logika zapętlająca indeks dni
         if (currentDayIndex < 0) currentDayIndex = globalDaysData.length - 1;
         if (currentDayIndex >= globalDaysData.length) currentDayIndex = 0;
+
         const step = document.getElementById('inputStep').value;
         const window = document.getElementById('inputWindow').value;
         renderCurrentDay(step, window);
     }
 
+    /**
+     * @brief Odpowiada za bezpośrednie renderowanie wykresu Chart.js i powiązanej z nim tabeli
+     * dla konkretnego, wybranego dnia przechowywanego w zmiennej currentDayIndex.
+     */
     function renderCurrentDay(stepSec, windowSec) {
         const dayData = globalDaysData[currentDayIndex];
         if (!dayData) return;
 
+        // Aktualizacja etykiet tekstowych w UI
         document.getElementById('currentDayLabel').innerText = dayData.nazwa;
-
         const suffix = globalDaysData.length > 1 ? "Wykryty w tym dniu: " : "Szczyt (TCBH): ";
         document.getElementById('uiWindowDesc').innerText = suffix + parseFloat(dayData.erlangiDnia).toFixed(2) + " Erl";
 
         const callsCount = dayData.tabela ? dayData.tabela.length : 0;
         document.getElementById('uiCalls').innerText = callsCount;
 
+        // Czyszczenie starego wykresu (zapobiega nakładaniu się płócien i błędom hoveringu Chart.js)
         const ctx = document.getElementById('myChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
 
+        // LOGIKA KOLOROWANIA GNR:
+        // C++ podał nam "peakStartIndex" (numer pierwszego koszyka szczytu) 
+        // i "binsInWindow" (ile koszyków wchodzi w skład okna).
         const peakStart = dayData.peakStartIndex;
         const peakEnd = peakStart + dayData.binsInWindow;
 
-        // Inteligentne kolorowanie słupków: Jeśli indeks mieści się w Oknie, zaznaczamy go na pomarańczowo.
+        // Inteligentne mapowanie tablic - przechodzimy przez każdy punkt danych na wykresie.
+        // Jeżeli indeks słupka znajduje się w wyznaczonym przedziale, kolorujemy go na akcent (pomarańczowy).
+        // W przeciwnym razie nadajemy mu neutralny kolor systemowy (zielony).
         const bgColors = dayData.data.map((_, index) =>
             (index >= peakStart && index < peakEnd) ? 'rgba(216, 59, 1, 0.9)' : 'rgba(16, 124, 65, 0.5)'
         );
@@ -223,13 +276,14 @@
             (index >= peakStart && index < peakEnd) ? '#d83b01' : '#107c41'
         );
 
+        // Inicjalizacja biblioteki Chart.js
         chartInstance = new Chart(ctx, {
-            type: 'bar',
+            type: 'bar', // Rodzaj wykresu słupkowego (najlepszy do pokazania koszykowania w czasie)
             data: {
-                labels: dayData.labels,
+                labels: dayData.labels, // Etykiety osi X (godziny) wygenerowane przez backend
                 datasets: [{
                     label: `Ruch [Erlangi] - ${dayData.nazwa}`,
-                    data: dayData.data,
+                    data: dayData.data, // Wartości natężenia na osi Y
                     backgroundColor: bgColors,
                     borderColor: borderColors,
                     borderWidth: 1
@@ -237,7 +291,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // Pozwala wykresowi swobodnie dopasować się do wysokości kontenera
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -248,18 +302,24 @@
                     }
                 },
                 plugins: {
-                    legend: { display: false } // Ukrywamy zbędną legendę, bo mamy opisy na osiach
+                    legend: { display: false } // Ukrywamy zbędną legendę nad wykresem dla czystości widoku
                 }
             }
         });
 
+        // Odbudowa tabeli HTML ze zgłoszeniami
         renderTable(dayData.tabela);
     }
 
+    /**
+     * @brief Przebudowuje drzewo DOM dla tabeli wyświetlającej surowe połączenia z danego szczytu.
+     * @param {Array} rows Lista obiektów (linii) zawierająca numery i czasy wywołań przysłane ze Springa.
+     */
     function renderTable(rows) {
         const tbody = document.querySelector('#dataTable tbody');
-        tbody.innerHTML = '';
+        tbody.innerHTML = ''; // Wyczyść stare dane
 
+        // Przypadek pustej listy (sanity check)
         if (!rows || rows.length === 0) {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td colspan="2" style="text-align: center; color: #888; font-style: italic; padding: 20px;">Brak wywołań wewnątrz tego szczytu</td>`;
@@ -267,6 +327,7 @@
             return;
         }
 
+        // Dynamiczne generowanie wierszy <tr> i kolumn <td>
         rows.forEach(row => {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>L. ${row.linia}</td><td>${row.czas}</td>`;
